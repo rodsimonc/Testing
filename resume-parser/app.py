@@ -92,7 +92,9 @@ def parse(text: str, nlp) -> dict:
     doc = nlp(text)
     emails = list(dict.fromkeys(EMAIL_RE.findall(text)))
     phones = list(dict.fromkeys(
-        p.strip() for p in PHONE_RE.findall(text) if sum(c.isdigit() for c in p) >= 8
+        p.strip() for p in PHONE_RE.findall(text)
+        if sum(c.isdigit() for c in p) >= 10
+        and not re.fullmatch(r"\d{4}\s*[-–]\s*\d{4}", p.strip())
     ))
     urls = list(dict.fromkeys(URL_RE.findall(text)))
     orgs = [ent.text.strip() for ent in doc.ents if ent.label_ == "ORG"]

@@ -11,6 +11,8 @@ streamlit run app.py
 
 Whisper models download on first use into the local cache. The `tiny`/`base` models run comfortably on CPU; `small`/`medium` are slower but sharper.
 
+**System dependency:** `faster-whisper` decodes non-WAV audio (mp3, m4a, ogg, webm) via libav/ffmpeg. Install ffmpeg (`apt install ffmpeg` on Debian/Ubuntu, `brew install ffmpeg` on macOS) or upload WAV files.
+
 ## What it does
 
 - **Transcription** — `faster-whisper` (int8 CPU) on any common audio/video format

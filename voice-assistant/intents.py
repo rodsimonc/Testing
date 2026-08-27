@@ -32,11 +32,22 @@ def _joke(_: str) -> str:
     return random.choice(JOKES)
 
 
+_WORD_OPS = {
+    r"\bplus\b": "+", r"\bminus\b": "-",
+    r"\btimes\b": "*", r"\bmultiplied by\b": "*",
+    r"\bdivided by\b": "/", r"\bover\b": "/",
+}
+
+
 def _math(text: str) -> str:
-    m = re.search(r"([\d\s\+\-\*\/\(\)\.\^]+)", text)
-    if not m:
+    normalized = text.lower()
+    for pat, op in _WORD_OPS.items():
+        normalized = re.sub(pat, op, normalized)
+    matches = re.findall(r"[\d\s\+\-\*\/\(\)\.\^]+", normalized)
+    candidate = max((m.strip() for m in matches), key=len, default="")
+    if not candidate or not re.search(r"\d", candidate):
         return "I couldn't find any arithmetic in that."
-    result = _safe_math(m.group(1).strip())
+    result = _safe_math(candidate)
     return f"The answer is {result}." if result is not None else "I couldn't evaluate that."
 
 
@@ -61,7 +72,7 @@ INTENTS: list[tuple[str, callable, str]] = [
     (r"\bwhat.+date\b|\btoday.+date\b|\bwhat day\b", _date, "date"),
     (r"\btell.+joke\b|\bmake me laugh\b", _joke, "joke"),
     (r"\bweather\b", _weather, "weather"),
-    (r"\bcalculate\b|\bwhat is\b|\bcompute\b|\d[\s\+\-\*\/]\d", _math, "math"),
+    (r"(?:\bcalculate\b|\bcompute\b|\bwhat is\b|\bhow much is\b).*\d|\d\s*[\+\-\*\/]\s*\d", _math, "math"),
 ]
 
 

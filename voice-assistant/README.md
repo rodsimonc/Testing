@@ -6,8 +6,10 @@ Local voice assistant with no API. Whisper for speech-to-text, rule-based intent
 
 ```bash
 pip install -r requirements.txt
-# Linux only, for the optional TTS voice:
-# sudo apt-get install espeak-ng
+# Linux (Debian/Ubuntu):
+#   sudo apt-get install espeak-ng ffmpeg   # espeak-ng for TTS, ffmpeg for non-WAV audio
+# macOS:
+#   brew install espeak-ng ffmpeg
 streamlit run app.py
 ```
 

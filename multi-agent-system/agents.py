@@ -105,10 +105,11 @@ class SummarizerAgent(Agent):
     description = "Produces a short summary of long text."
 
     def can_handle(self, task: str) -> float:
-        return 0.9 if ("summarize" in task.lower() or "summary of" in task.lower()) else 0.0
+        t = task.lower()
+        return 0.9 if re.search(r"\bsummari[sz]e\b|\bsummary of\b|\btl;dr\b", t) else 0.0
 
     def run(self, task: str, trace: Trace) -> str:
-        body = re.sub(r"^(please )?summariz[e]e?(this|:)?", "", task, flags=re.I).strip(": ").strip()
+        body = re.sub(r"^(please\s+)?summari[sz]e\b[:\s]*", "", task, flags=re.I).strip()
         sentences = re.split(r"(?<=[.!?])\s+", body)
         trace.log(self.name, "sentence-count", str(len(sentences)))
         if len(sentences) <= 3:

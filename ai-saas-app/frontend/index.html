@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Summarize-as-a-Service</title>
+<style>
+  :root { --bg:#0f172a; --panel:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --accent:#38bdf8; --border:#334155; }
+  * { box-sizing: border-box; }
+  body { margin:0; padding:2rem; font-family: system-ui, -apple-system, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 780px; margin: 0 auto; }
+  h1 { margin: 0 0 .25rem; }
+  .muted { color: var(--muted); }
+  section { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; margin-top: 1.25rem; }
+  input, textarea, button { font: inherit; }
+  input[type=email], input[type=text], input[type=number], textarea {
+    width: 100%; background: #0b1220; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: .6rem .75rem;
+  }
+  textarea { min-height: 140px; resize: vertical; }
+  label { display:block; font-size: .85rem; color: var(--muted); margin: .75rem 0 .35rem; }
+  button { background: var(--accent); color: #0f172a; border: 0; padding: .6rem 1rem; border-radius: 8px; font-weight: 600; cursor: pointer; }
+  button:hover { filter: brightness(1.05); }
+  pre { background: #0b1220; border-radius: 8px; padding: .75rem; overflow-x: auto; }
+  code { background: #0b1220; padding: .1rem .35rem; border-radius: 4px; }
+  .row { display: flex; gap: .75rem; align-items: end; }
+  .row > * { flex: 1; }
+  ul { margin: .5rem 0; padding-left: 1.25rem; }
+  ul li { margin-bottom: .35rem; }
+  .key { word-break: break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Summarize-as-a-Service</h1>
+  <p class="muted">Sign up for a key, POST text, get an extractive summary. FastAPI + SQLite + a homegrown TF-IDF summarizer.</p>
+
+  <section>
+    <h2>1. Get an API key</h2>
+    <div class="row">
+      <div>
+        <label for="email">Email</label>
+        <input id="email" type="email" placeholder="you@example.com">
+      </div>
+      <button id="signup">Sign up</button>
+    </div>
+    <p id="key" class="muted key"></p>
+  </section>
+
+  <section>
+    <h2>2. Summarize</h2>
+    <label for="apikey">API key</label>
+    <input id="apikey" type="text" placeholder="sk_…">
+    <label for="text">Text</label>
+    <textarea id="text" placeholder="Paste a long article…"></textarea>
+    <div class="row">
+      <div>
+        <label for="n">Sentences</label>
+        <input id="n" type="number" value="5" min="1" max="15">
+      </div>
+      <button id="summarize">Summarize</button>
+    </div>
+    <div id="out"></div>
+  </section>
+
+  <section>
+    <h2>3. History</h2>
+    <button id="load">Load my summaries</button>
+    <ul id="history"></ul>
+  </section>
+
+  <section class="muted">
+    <p>API docs: <a href="/docs" style="color:var(--accent)">/docs</a></p>
+    <p>Curl example:</p>
+<pre>curl -X POST http://localhost:8000/summarize \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk_..." \
+  -d '{"text":"...", "sentences":5}'</pre>
+  </section>
+</main>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const api = (path, opts={}) => fetch(path, opts).then(r => r.json().then(j => ({ok: r.ok, data: j})));
+
+$("signup").onclick = async () => {
+  const email = $("email").value.trim();
+  if (!email) return;
+  const {ok, data} = await api("/signup", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({email})
+  });
+  if (!ok) { $("key").textContent = "Error: " + (data.detail || "unknown"); return; }
+  $("key").innerHTML = `Your key: <code>${data.api_key}</code>`;
+  $("apikey").value = data.api_key;
+};
+
+$("summarize").onclick = async () => {
+  const apikey = $("apikey").value.trim();
+  const text = $("text").value.trim();
+  const n = parseInt($("n").value, 10) || 5;
+  if (!apikey || !text) return;
+  const {ok, data} = await api("/summarize", {
+    method: "POST",
+    headers: {"Content-Type": "application/json", "X-API-Key": apikey},
+    body: JSON.stringify({text, sentences: n})
+  });
+  if (!ok) { $("out").textContent = "Error: " + (data.detail || "unknown"); return; }
+  $("out").innerHTML = "<h3>Summary</h3><ul>" + data.summary.map(s => `<li>${s}</li>`).join("") + "</ul>";
+};
+
+$("load").onclick = async () => {
+  const apikey = $("apikey").value.trim();
+  if (!apikey) return;
+  const {ok, data} = await api("/summaries", { headers: {"X-API-Key": apikey} });
+  if (!ok) { $("history").innerHTML = ""; return; }
+  $("history").innerHTML = data.map(row => `<li><strong>#${row.id}</strong> — ${row.summary}</li>`).join("");
+};
+</script>
+</body>
+</html>
